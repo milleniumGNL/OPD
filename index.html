@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Памятные события</title>
+</head>
+<body>
+    <!-- форма для отправки данных на сервер -->
+    <!-- action="" – данные отправляются на текущий же URL -->
+    <!-- method="post" – данные отправляются методом POST -->
+    <form action="" method="post">
+        <!-- type="text" – обычная текстовая строка -->
+        <!-- name="num_1" – имя поля -->
+        <!-- placeholder – подсказка внутри поля до начала ввода -->
+        <input type="text" name="num_1" placeholder="Введите дату (ДД.ММ)">
+        <!-- type="submit" – при нажатии форма отправляется -->
+        <input type="submit">
+    </form>
+    <!-- Строка 12: заголовок первого уровня, в который будет вставлен результат, а именно ans=event -->
+    <h1>{{ans}}</h1>
+</body>
+</html>
