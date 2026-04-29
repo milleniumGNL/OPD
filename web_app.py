@@ -1,9 +1,18 @@
-# 1. Загрузка нужных нам библиотек. Flask позволяет пользователю ввести дату в формате «ДД.ММ»
-# и получить памятное событие, привязанное к этой дате, или сообщение об отсутствии события
-from flask import Flask, request, render_template
-# 2. Создаётся экземпляр веб-приложения Flask
+# 1. Импортируем необходимые классы и функции из Flask:
+# Flask - главный класс приложения,
+# request - для получения данных HTTP-запроса,
+# render_template - для отображения HTML-шаблона,
+# redirect - для перенаправления на другой URL,
+# url_for - для генерации URL по имени функции-обработчика,
+# flash - для временного хранения сообщения между запросами.
+from flask import Flask, request, render_template, redirect, url_for, flash, get_flashed_messages
+# 2. Импортируем datetime из одноимённого модуля для проверки дат
+from datetime import datetime
+# 3. Создаём экземпляр веб-приложения
 app = Flask(__name__)
-# 3. Куча разных праздников
+# 4. Дополнительный ключ для работы с flash-сообщениями
+app.secret_key = 'supersecretkey'
+
 events = {
     "01.01": "Новый год",
     "25.01": "Татьянин день",
@@ -18,34 +27,55 @@ events = {
     "05.10": "День учителя",
     "04.11": "День народного единства"
 }
-# 4. Связываем функцию с URL-адресом через "/"
+# 5. Декоратор связывает функцию index с URL + методы GET и POST.
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # 5. Это значение будет показано при первом открытии страницы (GET-запрос)
-    event = "Напиши дату, о которой хочешь узнать"
-    # 6. Проверяем запрос POST (отправка формы)
+    # 6. POST пользователь отправил форму
     if request.method == 'POST':
-        # 7. request.form – словарь с данными отправляем методом POST
+        # 7. Получение даты от пользователя
         date_input = request.form.get('num_1')
-        # 8. Проверка даты
-        if '.' in date_input:
-            # 9. Части, которые будут делиться на день и месяц двумя числами ДД.ММ
-            parts = date_input.split('.')
-            day = parts[0].zfill(2)
-            month = parts[1].zfill(2)
-            # 10. Ключ для словаря в нём сидит ДД.ММ
-            key = f"{day}.{month}"
-            # 11. Есть ли такой ключ в словаре?
-            if key in events:
-                # 12. Есть присваиваем
-                event = events[key]
-            else:
-                event = "Нет никакого праздника или события в этот день"
+        # 8. Проверка на наличие точки
+        if '.' not in date_input:
+            flash("Неверный формат. Используй ДД.ММ для корректности")
+            return redirect(url_for('index'))
+        # 9. Деление строки
+        parts = date_input.split('.')
+        if len(parts) != 2:
+            flash("Неверный формат. Используй ДД.ММ для корректности")
+            return redirect(url_for('index'))
+        # 10. Извлекаем строки дня и месяца
+        day_str, month_str = parts
+        # 11. Проверка, что обе части состоят только из цифр
+        if not (day_str.isdigit() and month_str.isdigit()):
+            flash("Неверный формат. Используй ДД.ММ для корректности")
+            return redirect(url_for('index'))
+        # 12. Преобразуем строки в целые числа для дальнейшей проверки
+        day = int(day_str)
+        month = int(month_str)
+
+        # 13. Проверка существования даты (год берём любой)
+        try:
+            # 14. Если дата невалидна, вызовет ValueError
+            datetime(2000, month, day)
+        except ValueError:
+            flash("Неверный формат. Несуществующий день или месяц")
+            return redirect(url_for('index'))
+
+        # 14. Приводим день и месяц к двузначному формату (например, '5' -> '05') для поиска в словаре
+        key = f"{day:02d}.{month:02d}"
+        # 15. Проверка
+        if key in events:
+            flash(events[key])
         else:
-            event = "Неверный формат. Используй ДД.ММ для корректности"
-    # 13. Параметр ans передаёт в шаблон значение переменной event
+            flash("Нет никакого праздника или события в этот день")
+        return redirect(url_for('index'))
+
+    # 16. Получаем все flash-сообщения (они будут удалены из сессии после чтения)
+    messages = get_flashed_messages()
+    # 17. Если список messages не пуст, берём первое сообщение, иначе задаём начальный текст
+    event = messages[0] if messages else "Напиши дату, о которой хочешь узнать"
+    # 18. Передаём в ans
     return render_template('index.html', ans=event)
 
 if __name__ == '__main__':
-    # 14. Запуск сервера
     app.run()
